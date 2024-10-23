@@ -1,7 +1,33 @@
 #pragma once
 
 #include "vk/vk_types.h"
+#include <deque>
 #include <vulkan/vulkan_core.h>
+
+/*
+ * Doing callbacks like this is **inneficient** at scale, because we are storing 
+ * whole std::functions for every object we are deleting, which is not going 
+ * to be optimal. For the amount of objects we will use in this tutorial, its 
+ * going to be fine. but if you need to delete thousands of objects and want 
+ * them deleted faster, a better implementation would be to store arrays of 
+ * vulkan handles of various types such as VkImage, VkBuffer, and so on. And 
+ * then delete those from a loop.
+ */
+struct DeletionQueue {
+    std::deque<std::function<void()>> deletors;
+
+    void push_function(std::function<void()>&& function) {
+        deletors.push_back(function);
+    }
+
+    void flush() {
+        for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+            (*it)();
+        }
+
+        deletors.clear();
+    }
+};
 
 struct FrameData {
     VkCommandPool _commandPool;
@@ -9,6 +35,8 @@ struct FrameData {
 
     VkSemaphore _swapchainSemaphore, _renderSemaphore;
     VkFence _renderFence;
+
+    DeletionQueue _deletionQueue;
 };
 
 // Double-Buffering
@@ -16,14 +44,6 @@ constexpr unsigned int FRAME_OVERLAP = 2;
 
 class VulkanEngine {
 public:
-    // Frame Data variables
-    FrameData _frames[FRAME_OVERLAP];
-    FrameData& get_current_frame() { return _frames[_frameNumber % FRAME_OVERLAP]; }
-
-    // Command Queue
-    VkQueue _graphicsQueue;
-    uint32_t _graphicsQueueFamily;
-
     // Window variables
     bool _isInitialized {false};
     int _frameNumber {0};
@@ -49,6 +69,24 @@ public:
     std::vector<VkImageView> _swapchainImageViews;
     VkExtent2D _swapchainExtent;
 
+    // Memory Allocator
+    VmaAllocator _allocator;
+
+    // Frame Data variables
+    FrameData _frames[FRAME_OVERLAP];
+    FrameData& get_current_frame() { return _frames[_frameNumber % FRAME_OVERLAP]; }
+
+    // Command Queue
+    VkQueue _graphicsQueue;
+    uint32_t _graphicsQueueFamily;
+
+    // Drawing Resources
+    AllocatedImage _drawImage;
+    VkExtent2D _drawExtent;
+
+
+    DeletionQueue _mainDeletionQueue;
+
     // Global Functions
     static VulkanEngine& Get();
     void init();
@@ -69,4 +107,7 @@ private:
     // Swapchain
     void create_swapchain(uint32_t width, uint32_t height);
     void destroy_swapchain();
+
+    // Drawing function
+    void draw_background(VkCommandBuffer cmd);
 };

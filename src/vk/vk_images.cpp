@@ -1,6 +1,7 @@
 #include "vk/vk_images.h"
 
 #include "vk/vk_initializers.h"
+#include <vulkan/vulkan_core.h>
 
 void vkutil::transition_image(VkCommandBuffer cmd, VkImage image,
                               VkImageLayout currentLayout, VkImageLayout newLayout) {
@@ -31,4 +32,48 @@ void vkutil::transition_image(VkCommandBuffer cmd, VkImage image,
     depInfo.pImageMemoryBarriers    = &imageBarrier;
 
     vkCmdPipelineBarrier2(cmd, &depInfo);
+}
+
+/* Vulkan has 2 main ways of copying one image to another. you can use 
+ * VkCmdCopyImage or VkCmdBlitImage. CopyImage is faster, but its much more 
+ * restricted, for example the resolution on both images must match. 
+ * Meanwhile, blit image lets you copy images of different formats and different 
+ * sizes into one another. You have a source rectangle and a target rectangle, 
+ * and the system copies it into its position. Those two functions are useful 
+ * when setting up the engine, but later its best to ignore them and write 
+ * your own version that can do extra logic on a fullscreen fragment shader.
+ */
+void vkutil::copy_image_to_image(VkCommandBuffer cmd, VkImage source, 
+        VkImage destination, VkExtent2D srcSize, VkExtent2D dstSize) {
+
+    VkImageBlit2 blitRegion{ .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2, .pNext = nullptr };
+
+    blitRegion.srcOffsets[1].x = srcSize.width;
+    blitRegion.srcOffsets[1].y = srcSize.height;
+    blitRegion.srcOffsets[1].z = 1;
+
+    blitRegion.dstOffsets[1].x = dstSize.width;
+    blitRegion.dstOffsets[1].y = dstSize.height;
+    blitRegion.dstOffsets[1].z = 1;
+
+    blitRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    blitRegion.srcSubresource.baseArrayLayer = 0;
+    blitRegion.srcSubresource.layerCount = 1;
+    blitRegion.srcSubresource.mipLevel = 0;
+
+    blitRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    blitRegion.dstSubresource.baseArrayLayer = 0;
+    blitRegion.dstSubresource.layerCount = 1;
+    blitRegion.dstSubresource.mipLevel = 0;
+
+    VkBlitImageInfo2 blitInfo{ .sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2, .pNext = nullptr };
+    blitInfo.dstImage = destination;
+    blitInfo.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    blitInfo.srcImage = source;
+    blitInfo.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    blitInfo.filter = VK_FILTER_LINEAR;
+    blitInfo.regionCount = 1;
+    blitInfo.pRegions = &blitRegion;
+
+    vkCmdBlitImage2(cmd, &blitInfo);
 }
