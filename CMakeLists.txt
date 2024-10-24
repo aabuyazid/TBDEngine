@@ -9,7 +9,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Get the list of all files.
 FILE(GLOB_RECURSE SOURCES "src/*.cpp")
 FILE(GLOB_RECURSE HEADERS "include/*.h")
-FILE(GLOB_RECURSE GLSL "resources/*.glsl")
+FILE(GLOB_RECURSE GLSL_SOURCE_FILES 
+    "shaders/*.frag"
+    "shaders/*.vert"
+    "shaders/*.comp"
+)
 
 # Set the executable.
 message(STATUS "Including ${CMAKE_SOURCE_DIR}/include")
@@ -160,6 +164,25 @@ ELSE()
     ENDIF()
 ENDIF()
 
+find_program(GLSL_VALIDATOR glslangValidator HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)
+
+foreach(GLSL ${GLSL_SOURCE_FILES})
+    message(STATUS "BUILDING SHADER")
+    get_filename_component(FILE_NAME ${GLSL} NAME)
+    set(SPIRV "${PROJECT_SOURCE_DIR}/shaders/${FILE_NAME}.spv")
+    message(STATUS ${GLSL})
+    add_custom_command(
+        OUTPUT ${SPIRV}
+        COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+        DEPENDS ${GLSL})
+    list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+endforeach(GLSL)
+
+add_custom_target(
+    Shaders 
+    DEPENDS ${SPIRV_BINARY_FILES}
+    )
+
 # Additional settings for Vulkan-based projects
 # Specify Vulkan SDK paths for runtime environment (Windows)
 # if(WIN32)
@@ -169,13 +192,3 @@ ENDIF()
 #         ${VULKAN_RUNTIME_PATH}/vulkan-1.dll
 #         $<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>)
 # endif()
-
-# Define a custom command to copy compile_commands.json after building
-add_custom_command(
-    TARGET ${PROJECT_NAME}
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-         ${CMAKE_BINARY_DIR}/compile_commands.json
-         ${CMAKE_SOURCE_DIR}/src/compile_commands.json
-    COMMENT "Copying compile_commands.json to src directory"
-)
