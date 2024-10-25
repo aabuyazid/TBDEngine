@@ -301,13 +301,15 @@ void VulkanEngine::draw() {
     _drawExtent.width = _drawImage.imageExtent.width;
     _drawExtent.height = _drawImage.imageExtent.height;
 
-    VK_CHECK(vkBeginCommandBuffer(cmd, &cmdBeginInfo));
+    VK_CHECK( vkBeginCommandBuffer(cmd, &cmdBeginInfo) );
 
     // Transition main draw image to general layout for writeability 
     vkutil::transition_image(cmd, _drawImage.image, 
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
+    fmt::println("Starting draw background");
     draw_background(cmd);
+    fmt::println("Finished draw background");
 
     // Transition the draw image and swapchain image into correct transfer layouts
     vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, 
