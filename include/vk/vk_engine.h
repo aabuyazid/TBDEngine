@@ -1,6 +1,8 @@
 #pragma once
 
 #include "vk/vk_types.h"
+#include "vk/vk_descriptors.h"
+#include "vk/vk_pipelines.h"
 #include <deque>
 #include <vulkan/vulkan_core.h>
 
@@ -87,6 +89,16 @@ public:
 
     DeletionQueue _mainDeletionQueue;
 
+    // Descriptor Layouts and Allocators
+    DescriptorAllocator globalDescriptorAllocator;
+
+    VkDescriptorSet _drawImageDescriptors;
+    VkDescriptorSetLayout _drawImageDescriptorLayout;
+
+    // Pipelines
+    VkPipeline _gradientPipeline;
+    VkPipelineLayout _gradientPipelineLayout;
+
     // Global Functions
     static VulkanEngine& Get();
     void init();
@@ -103,6 +115,9 @@ private:
     void init_swapchain();
     void init_commands();
     void init_sync_structures();
+    void init_descriptors();
+    void init_pipelines();
+    void init_background_pipelines();
 
     // Swapchain
     void create_swapchain(uint32_t width, uint32_t height);
