@@ -307,9 +307,7 @@ void VulkanEngine::draw() {
     vkutil::transition_image(cmd, _drawImage.image, 
             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
 
-    fmt::println("Starting draw background");
     draw_background(cmd);
-    fmt::println("Finished draw background");
 
     // Transition the draw image and swapchain image into correct transfer layouts
     vkutil::transition_image(cmd, _drawImage.image, VK_IMAGE_LAYOUT_GENERAL, 
@@ -391,6 +389,7 @@ void VulkanEngine::draw() {
 void VulkanEngine::draw_background(VkCommandBuffer cmd) {
     VkClearColorValue clearValue;
     float flash = std::abs(std::sin(_frameNumber / 120.f));
+    clearValue = { { 0.0f, 0.0f, flash, 1.0f} };
 
     VkImageSubresourceRange clearRange = 
         vkinit::image_subresource_range(VK_IMAGE_ASPECT_COLOR_BIT);
