@@ -270,7 +270,7 @@ void VulkanEngine::init_background_pipelines() {
             nullptr, &_gradientPipelineLayout) );
 
     VkShaderModule computeDrawShader;
-    if (!vkutil::load_shader_module("../../shaders/gradient.comp.spv", 
+    if (!vkutil::load_shader_module("../shaders/gradient.comp.spv",
             _device, &computeDrawShader)) {
         fmt::println("Error when building the compute shader");
     }
@@ -287,6 +287,7 @@ void VulkanEngine::init_background_pipelines() {
     computeCreateInfo.pNext = nullptr;
     computeCreateInfo.layout = _gradientPipelineLayout;
     computeCreateInfo.stage = stageInfo;
+
 
     VK_CHECK( vkCreateComputePipelines(_device, VK_NULL_HANDLE, 1, 
             &computeCreateInfo, nullptr, &_gradientPipeline) );

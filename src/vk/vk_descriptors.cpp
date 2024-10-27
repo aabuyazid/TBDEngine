@@ -41,7 +41,7 @@ VkDescriptorSetLayout DescriptorLayoutBuilder::build(VkDevice device,
 
 // DescriptorAllocator Functions Start // 
 void DescriptorAllocator::init_pool(VkDevice device, uint32_t maxSets, 
-        std::span<PoolSizeRatio> poolRatios) {
+        std::vector<PoolSizeRatio>& poolRatios) {
 
     std::vector<VkDescriptorPoolSize> poolSizes;
     for (PoolSizeRatio ratio: poolRatios) {

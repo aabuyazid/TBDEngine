@@ -33,6 +33,7 @@ bool vkutil::load_shader_module(const char *filePath,
     // codeSize has to be in bytes
     createInfo.codeSize = buffer.size() * sizeof(uint32_t);
     createInfo.pNext = nullptr;
+    createInfo.pCode = buffer.data();
 
     VkShaderModule shaderModule;
     if (vkCreateShaderModule(device, &createInfo, 
