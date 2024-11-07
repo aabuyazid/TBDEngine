@@ -1,38 +1,86 @@
-#define GLFW_INCLUDE_VULKAN
+#define GLEW_STATIC
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-// #include "/Users/arkan/Documents/TBDEngine/build/_deps/glm-src/glm/vec4.hpp"
-// #include "/Users/arkan/Documents/TBDEngine/build/_deps/glm-src/glm/mat4x4.hpp"
-
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
-
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <iostream>
+#include <string>
 
-int main() {
-    glfwInit();
+#include "gui/gui_engine.h"
+#define GL_SILENCE_DEPRECATION
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+#include <GLES2/gl2.h>
+#endif
+#include <memory>
+#include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Vulkan window", nullptr, nullptr);
+#include "render/render_engine.h"
 
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+#define WINDOW_WIDTH 640
+#define WINDOW_HEIGHT 480
+#define NUM_LIGHTS 2
+#define NUM_MATERIALS 3
+#define NUM_SHADERS 3
 
-    std::cout << extensionCount << " extensions supported\n";
+GLFWwindow *window;
 
-    glm::mat4 matrix;
-    glm::vec4 vec;
-    auto test = matrix * vec;
+std::unique_ptr<GuiEngine> guiEngine;
+std::unique_ptr<RenderEngine> renderEngine;
 
-    while(!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
+// Keyboard character callback function
+void CharacterCallback(GLFWwindow* lWindow, unsigned int key)
+{
+	renderEngine->CharacterCallback(lWindow, key);
+}
+void FrameBufferSizeCallback(GLFWwindow* lWindow, int width, int height)
+{
+	renderEngine->FrameBufferSizeCallback(lWindow, width, height);
+}
+
+
+static void glfw_error_callback(int error, const char* description)
+{
+    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
+
+
+int main(int argc, char *argv[])
+{
+	// GLFWwindow* window is shared between gui and render,
+	// so let's declare it in main.
+    glfwSetErrorCallback(glfw_error_callback);
+    if (!glfwInit())
+    {
+	    return -1;
     }
+	glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GL_FALSE);
+	window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "TBDEngine", NULL, NULL);
+	glfwMakeContextCurrent(window);
+	glewExperimental = GL_TRUE;
+	glewInit();
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	glfwSetCharCallback(window, CharacterCallback);
+	glfwSetFramebufferSizeCallback(window, FrameBufferSizeCallback);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glEnable(GL_DEPTH_TEST);
+
+	guiEngine = std::make_unique<GuiEngine>();
+	renderEngine = std::make_unique<RenderEngine>(window);
+	guiEngine->init(window);
+	while ( glfwWindowShouldClose(window) == 0 )
+	{
+		int width,height;
+		glfwGetWindowSize(window, &width, &height);
+		glfwPollEvents();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		guiEngine->run(width,height);
+		renderEngine->Display();
+		glfwSwapBuffers(window);
+	}
+	guiEngine->cleanup();
 
     glfwDestroyWindow(window);
-
     glfwTerminate();
 
-    return 0;
+	return 0;
 }
